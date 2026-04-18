@@ -1,0 +1,235 @@
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>21st - dark</title>
+</head>
+
+<body>
+    
+
+<div class="title">
+    <h1>21st - dark</h1>
+    <p>Make posts about anything, save it for later.</p>
+    <img class="logo" src="https://i.postimg.cc/xdYByL6T/a0652863-87c6-4259-bed5-e5738201816d.png" alt="">
+</div>
+
+<div id="createposts">
+    <h3>Create a post</h3>
+
+    <input id="title" placeholder="Title">
+    <input id="description" placeholder="Description">
+    <textarea id="content" placeholder="Write something..."></textarea>
+
+    <button onclick="createPost()">Create Post</button>
+</div>
+
+<div id="posts"></div>
+
+<div id="postView"></div>
+
+<style>
+:root {
+  --bg-main: #0a0a0f;
+  --red-deep: #7a0c1e;
+  --red-glow: #ff2a4d;
+  --text-primary: #e6e6eb;
+  --text-muted: #9a9aa3;
+  --glow-soft: 0 0 20px rgba(255, 42, 77, 0.25);
+}
+
+body {
+    margin: 0;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    font-family: Arial, sans-serif;
+    color: var(--text-primary);
+    background: var(--bg-main);
+}
+
+.title {
+    margin-top: 20px;
+    padding: 20px;
+    text-align: center;
+    color: var(--red-glow);
+    text-shadow: 0 0 2px var(--red-glow), 0 0 20px var(--red-glow);
+}
+
+#createposts {
+    background: rgba(0,0,0,0.5);
+    padding: 20px;
+    border-radius: 10px;
+    width: 400px;
+    box-shadow: var(--glow-soft);
+}
+
+input, textarea {
+    width: 100%;
+    margin: 5px 0;
+    padding: 8px;
+    border: none;
+    border-radius: 5px;
+    background: #111;
+    color: white;
+}
+
+button {
+    margin-top: 10px;
+    width: 100%;
+    padding: 10px;
+    background: var(--red-deep);
+    border: none;
+    color: white;
+    cursor: pointer;
+}
+
+#posts {
+    width: 400px;
+    margin-top: 20px;
+}
+
+.card {
+    background: rgba(0,0,0,0.6);
+    padding: 10px;
+    margin-top: 10px;
+    border-radius: 10px;
+    box-shadow: var(--glow-soft);
+    cursor: pointer;
+}
+
+.card:hover {
+    transform: scale(1.02);
+}
+
+#postView {
+    display: none;
+    position: fixed;
+    top: 20%;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 500px;
+    background: black;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: var(--glow-soft);
+}
+.logo {
+    width: 150px;
+    height: auto;
+    margin-top: 20px;
+    margin-right: 25px;
+    justify-content: center;
+    align-items: center;
+    display: flex;
+    position: relative;
+    left: 65px;
+
+    border-radius: 20px;
+
+    box-shadow: 
+        0 0 20px rgba(66, 0, 0, 0.8),
+        0 0 15px rgba(255, 54, 54, 0.6);
+
+    display: block;
+}
+
+@media (max-width: 600px) {
+    #postView {
+        width: 90%;
+    }
+}
+        
+</style>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-app.js";
+import { 
+    getFirestore, 
+    addDoc, 
+    collection, 
+    onSnapshot, 
+    serverTimestamp 
+} from "https://www.gstatic.com/firebasejs/12.12.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyDa6ix12K831C7x_rDoEINVLa1HaLgCizs",
+  authDomain: "st-dark.firebaseapp.com",
+  projectId: "st-dark",
+  storageBucket: "st-dark.firebasestorage.app",
+  messagingSenderId: "532166901034",
+  appId: "1:532166901034:web:fe08bc32abda9c0998f253"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+/* CREATE POST */
+window.createPost = async function () {
+    const title = document.getElementById("title").value;
+    const description = document.getElementById("description").value;
+    const content = document.getElementById("content").value;
+
+    if (!title || !description || !content) return alert("Fill everything");
+
+    await addDoc(collection(db, "posts"), {
+        title,
+        description,
+        content,
+        createdAt: serverTimestamp()
+    });
+
+    document.getElementById("title").value = "";
+    document.getElementById("description").value = "";
+    document.getElementById("content").value = "";
+};
+
+/* REAL-TIME LOAD (🔥 FIXED) */
+function loadPosts() {
+    const postsDiv = document.getElementById("posts");
+
+    onSnapshot(collection(db, "posts"), (snapshot) => {
+        postsDiv.innerHTML = "";
+
+        snapshot.forEach(doc => {
+            const data = doc.data();
+
+            const div = document.createElement("div");
+            div.className = "card";
+
+            div.innerHTML = `
+                <h3>${data.title}</h3>
+                <p>${data.description}</p>
+            `;
+
+            div.onclick = () => openPost(data);
+
+            postsDiv.appendChild(div);
+        });
+    });
+}
+
+/* OPEN POST */
+function openPost(post) {
+    const view = document.getElementById("postView");
+
+    view.innerHTML = `
+        <h2>${post.title}</h2>
+        <p style="color:#aaa">${post.description}</p>
+        <hr>
+        <p>${post.content}</p>
+        <br>
+        <button onclick="document.getElementById('postView').style.display='none'">
+            Close
+        </button>
+    `;
+
+    view.style.display = "block";
+}
+
+loadPosts();
+</script>
+
+</body>
+</html>
